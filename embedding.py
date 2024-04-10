@@ -55,6 +55,7 @@ class ClipEmbeddingModel:
         """
 
         images = _resize_bicubic(images, self.input_image_size)
+        images = images[:,:,:,:3]
         inputs = self.image_processor(
             images=images,
             do_normalize=True,

@@ -51,13 +51,19 @@ def compute_cmmd(ref_dir, eval_dir, ref_embed_file=None, batch_size=32, max_coun
     if ref_embed_file is not None:
         ref_embs = np.load(ref_embed_file).astype("float32")
     else:
-        ref_embs = io_util.compute_embeddings_for_dir(ref_dir, embedding_model, batch_size, max_count).astype(
+        ref_embs, ref_paths = io_util.compute_embeddings_for_dir(ref_dir, embedding_model, batch_size, max_count)
+        ref_embs = ref_embs.astype(
             "float32"
         )
-    eval_embs = io_util.compute_embeddings_for_dir(eval_dir, embedding_model, batch_size, max_count).astype("float32")
-    val = distance.mmd(ref_embs, eval_embs)
-    return val.numpy()
-
+    eval_embs, eval_paths = io_util.compute_embeddings_for_dir(eval_dir, embedding_model, batch_size, max_count)
+    eval_embs = eval_embs.astype("float32")
+    scores = []
+    for ref_emb, eval_emb, ref_path, eval_path in zip(ref_embs, eval_embs, ref_paths, eval_paths):
+        val = distance.mmd(ref_emb.reshape(1,-1), eval_emb.reshape(1,-1))
+        scores.append({"ref_path":ref_path[0], "gen_path":eval_path[0], "cmmd_score":val.numpy()})
+    #val = distance.mmd(ref_embs, eval_embs)
+    #return val
+    return scores
 
 def main(argv):
     if len(argv) != 3:

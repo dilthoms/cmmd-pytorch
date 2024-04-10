@@ -67,10 +67,10 @@ class CMMDDataset(Dataset):
 
         x = self._read_image(img_path, self.reshape_to)
         if x.ndim == 3:
-            return x
+            return x, img_path
         elif x.ndim == 2:
             # Convert grayscale to RGB by duplicating the channel dimension.
-            return np.tile(x[Ellipsis, np.newaxis], (1, 1, 3))
+            return np.tile(x[Ellipsis, np.newaxis], (1, 1, 3)), img_path
 
 
 def compute_embeddings_for_dir(
@@ -101,8 +101,9 @@ def compute_embeddings_for_dir(
     dataloader = DataLoader(dataset, batch_size=batch_size)
 
     all_embs = []
+    all_paths = []
     for batch in tqdm.tqdm(dataloader, total=count // batch_size):
-        image_batch = batch.numpy()
+        image_batch = batch[0].numpy()
 
         # Normalize to the [0, 1] range.
         image_batch = image_batch / 255.0
@@ -117,7 +118,7 @@ def compute_embeddings_for_dir(
             embedding_model.embed(image_batch)
         )  # The output has shape (num_devices, batch_size, embedding_dim).
         all_embs.append(embs)
-
+        all_paths.append(batch[1])
     all_embs = np.concatenate(all_embs, axis=0)
 
-    return all_embs
+    return all_embs, all_paths
